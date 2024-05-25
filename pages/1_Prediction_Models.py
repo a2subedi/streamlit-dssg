@@ -24,6 +24,16 @@ def plotting_demo():
     progress_bar = st.sidebar.progress(0)
     status_text = st.sidebar.empty()
     last_rows = np.random.randn(1, 1)
+    option = st.selectbox(
+        'Please select a model',
+        ('Model1', 'Model2', 'Model3'))
+    options = st.multiselect(
+    "Please select data regions",
+    ["USA", "DEU", "AUS", "NPL"]
+    )
+
+    st.write("You selected:", options)
+    st.write('You selected:', option)
     chart = st.line_chart(last_rows)
 
     for i in range(1, 101):
@@ -42,9 +52,9 @@ def plotting_demo():
     st.button("Re-run")
 
 
-st.set_page_config(page_title="Plotting Demo", page_icon="📈")
-st.markdown("# Plotting Demo")
-st.sidebar.header("Plotting Demo")
+st.set_page_config(page_title="Prediction Models", page_icon="📈")
+st.markdown("# Prediction Models")
+st.sidebar.header("Prediction Models")
 st.write(
     """This demo illustrates a combination of plotting and animation with
 Streamlit. We're generating a bunch of random numbers in a loop for around
