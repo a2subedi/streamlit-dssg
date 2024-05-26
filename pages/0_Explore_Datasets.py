@@ -15,68 +15,75 @@
 from typing import Any
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import streamlit as st
 from streamlit.hello.utils import show_code
+from constants import PATHS
+
+import pandas as pd
+from prophet import Prophet
 
 
 def animation_demo() -> None:
 
-    # Interactive Streamlit elements, like these sliders, return their value.
-    # This gives you an extremely simple interaction model.
-    iterations = st.sidebar.slider("Level of detail", 2, 20, 10, 1)
-    separation = st.sidebar.slider("Separation", 0.7, 2.0, 0.7885)
+    # DATASET
+    df_raw = pd.read_csv(PATHS["DATASET"])
+    # st.write(df.head())
 
-    # Non-interactive elements return a placeholder to their location
-    # in the app. Here we're storing progress_bar to update it later.
-    progress_bar = st.sidebar.progress(0)
+    # METADATA COUNTRIES
+    df_cou = pd.read_csv(PATHS["METADATA_COUNTRIES"])
+    # st.write(df_cou.head())
 
-    # These two elements will be filled in later, so we create a placeholder
-    # for them using st.empty()
-    frame_text = st.sidebar.empty()
-    image = st.empty()
+    # METADATA_INDICATORS
+    df_ind = pd.read_csv(PATHS["METADATA_INDICATORS"])
+    # st.write(df_ind.head())
+    
+    df_map = pd.read_csv(PATHS['METADATA_MAPPINGS'])
+    df_map_filtered = df_map[df_map["Use Case 3"] == 3]
+    # st.write(df_map_filtered.head())
 
-    m, n, s = 960, 640, 400
-    x = np.linspace(-m / s, m / s, num=m).reshape((1, m))
-    y = np.linspace(-n / s, n / s, num=n).reshape((n, 1))
+    # Prepare selection list for indicator and countries/regions
+   
+    indicator_choice = st.multiselect(
+        "Choose Indicator(s)", list(df_map_filtered["Dataset"]), None
+    )
+    indicator_choice_detail = df_ind[df_ind["INDICATOR_NAME"].isin(indicator_choice)]
+    
+    
+    countries = st.multiselect(
+        "Choose countries/region", list(df_cou["TableName"]), None
+    )
+    
+    if not indicator_choice:
+        st.error("Please select at least one indicator.")
+    if not countries:
+        st.error("Please select at least one country.")
+    else:
+        for indicator in indicator_choice:
+            df = df_raw.copy()
+            filtered_df = df[
+                (df["Indicator Name"]==indicator) & (df["Country Name"].isin(countries))
+            ]
+            filtered_df.dropna()
+            
+            df_pivot = filtered_df[(filtered_df["Indicator Name"]== indicator) & filtered_df["Country Name"].isin(countries)]\
+                    .pivot(index="year", columns="Country Name", values="value")
 
-    for frame_num, a in enumerate(np.linspace(0.0, 4 * np.pi, 100)):
-        # Here were setting value for these two elements.
-        progress_bar.progress(frame_num)
-        frame_text.text("Frame %i/100" % (frame_num + 1))
-
-        # Performing some fractal wizardry.
-        c = separation * np.exp(1j * a)
-        Z = np.tile(x, (n, 1)) + 1j * np.tile(y, (1, m))
-        C = np.full((n, m), c)
-        M: Any = np.full((n, m), True, dtype=bool)
-        N = np.zeros((n, m))
-
-        for i in range(iterations):
-            Z[M] = Z[M] * Z[M] + C[M]
-            M[np.abs(Z) > 2] = False
-            N[M] = i
-
-        # Update the image placeholder by calling the image() function on it.
-        image.image(1.0 - (N / N.max()), use_column_width=True)
-
-    # We clear elements by calling empty on them.
-    progress_bar.empty()
-    frame_text.empty()
-
-    # Streamlit widgets automatically run the script from top to bottom. Since
-    # this button is not connected to any other logic, it just causes a plain
-    # rerun.
-    st.button("Re-run")
-
-
-st.set_page_config(page_title="Comparisons", page_icon="📹")
-st.markdown("# Comparisons")
-st.sidebar.header("Comparisons")
+            df = pd.DataFrame(df_pivot).T
+            if indicator_choice and countries:
+                st.write(indicator + ' Over the years :')
+            st.line_chart(df.T)
+            
+        
+    
+st.set_page_config(page_title="Explore Dataset", page_icon="📹")
+st.markdown("# Explore Dataset")
+st.sidebar.header("Explore Dataset")
 st.write(
-    """Choose different prediction models and indicators for comparisions"""
+    """Choose different Country code/ Region code and indicators to explore dataset"""
 )
 
 animation_demo()
 
-show_code(animation_demo)
+# show_code(animation_demo)
